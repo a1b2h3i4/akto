@@ -8,6 +8,7 @@ import com.akto.dto.Config;
 import com.akto.dto.SignupInfo;
 import com.akto.dto.SignupUserInfo;
 import com.akto.dto.User;
+import com.akto.log.LoggerMaker;
 import com.akto.utils.Token;
 import com.akto.utils.HttpUtils;
 import com.akto.utils.JWT;
@@ -17,8 +18,6 @@ import com.mongodb.client.model.Updates;
 import com.opensymphony.xwork2.Action;
 import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +37,7 @@ import static com.akto.filter.UserDetailsFilter.LOGIN_URI;
 // Adds the refresh token to http-only cookie
 // Adds the access token to header
 public class LoginAction implements Action, ServletResponseAware, ServletRequestAware {
-    private static final Logger logger = LoggerFactory.getLogger(LoginAction.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(LoginAction.class);
     
     public static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
     public BasicDBObject getLoginResult() {
@@ -52,7 +51,7 @@ public class LoginAction implements Action, ServletResponseAware, ServletRequest
     BasicDBObject loginResult = new BasicDBObject();
     @Override
     public String execute() throws IOException {
-        logger.info("LoginAction Hit");
+        loggerMaker.infoAndAddToDb("LoginAction Hit");
 
         if (username == null) {
             return Action.ERROR.toUpperCase();
@@ -85,7 +84,7 @@ public class LoginAction implements Action, ServletResponseAware, ServletRequest
                 }
             }
 
-            logger.info("Auth Failed");
+            loggerMaker.infoAndAddToDb("Auth Failed");
             return "ERROR";
         }
         String result = loginUser(user, servletResponse, true, servletRequest);
@@ -97,10 +96,10 @@ public class LoginAction implements Action, ServletResponseAware, ServletRequest
         Context.accountId.set(1_000_000);
         long count = SingleTypeInfoDao.instance.getEstimatedCount();
         if(count == 0){
-            logger.info("New user, showing quick start page");
+            loggerMaker.infoAndAddToDb("New user, showing quick start page");
             loginResult.put("redirect", "dashboard/quick-start");
         } else {
-            logger.info("Existing user, not redirecting to quick start page");
+            loggerMaker.infoAndAddToDb("Existing user, not redirecting to quick start page");
         }
     }
 

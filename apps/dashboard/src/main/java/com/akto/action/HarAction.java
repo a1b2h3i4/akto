@@ -8,6 +8,7 @@ import com.akto.dao.context.Context;
 import com.akto.dto.ApiCollection;
 import com.akto.har.HAR;
 import com.akto.listener.KafkaListener;
+import com.akto.log.LoggerMaker;
 import com.akto.parsers.HttpCallParser;
 import com.akto.runtime.APICatalogSync;
 import com.akto.runtime.policies.AktoPolicy;
@@ -37,6 +38,7 @@ public class HarAction extends UserAction {
 
     private boolean skipKafka = DashboardMode.isLocalDeployment();
     private byte[] tcpContent;
+    private static final LoggerMaker loggerMaker = new LoggerMaker(HarAction.class);
 
     @Override
     public String execute() throws IOException {
@@ -102,7 +104,7 @@ public class HarAction extends UserAction {
             harErrors = har.getErrors();
             Utils.pushDataToKafka(apiCollectionId, topic, messages, harErrors, skipKafka);
         } catch (Exception e) {
-            ;
+            loggerMaker.errorAndAddToDb(e.toString());
             return SUCCESS.toUpperCase();
         }
         return SUCCESS.toUpperCase();

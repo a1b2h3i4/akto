@@ -3,9 +3,9 @@ package com.akto.runtime.policies;
 import com.akto.dto.ApiInfo;
 import com.akto.dto.HttpResponseParams;
 import com.akto.dto.runtime_filters.RuntimeFilter;
+import com.akto.log.LoggerMaker;
 import com.akto.parsers.HttpCallParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.security.web.util.matcher.IpAddressMatcher;
 
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ import java.util.List;
 public class ApiAccessTypePolicy {
     private List<String> privateCidrList;
     public static final String X_FORWARDED_FOR = "x-forwarded-for";
-    private static final Logger logger = LoggerFactory.getLogger(ApiAccessTypePolicy.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(ApiAccessTypePolicy.class);
 
     public ApiAccessTypePolicy(List<String> privateCidrList) {
         this.privateCidrList = privateCidrList;
@@ -45,6 +45,7 @@ public class ApiAccessTypePolicy {
                     return false;
                 }
            } catch (Exception e) {
+            loggerMaker.errorAndAddToDb(e.toString());
                 return false;
            }
         }

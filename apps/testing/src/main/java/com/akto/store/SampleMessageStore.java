@@ -13,17 +13,16 @@ import com.akto.dto.testing.*;
 import com.akto.dto.traffic.Key;
 import com.akto.dto.traffic.SampleData;
 import com.akto.dto.type.SingleTypeInfo;
+import com.akto.log.LoggerMaker;
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.model.Filters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class SampleMessageStore {
 
 
-    private static final Logger logger = LoggerFactory.getLogger(SampleMessageStore.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(SampleMessageStore.class);
     public static Map<String, SingleTypeInfo> buildSingleTypeInfoMap(TestingEndpoints testingEndpoints) {
         Map<String, SingleTypeInfo> singleTypeInfoMap = new HashMap<>();
         if (testingEndpoints == null) return singleTypeInfoMap;
@@ -62,7 +61,7 @@ public class SampleMessageStore {
                 singleTypeInfoMap.put(singleTypeInfo.composeKeyWithCustomSubType(SingleTypeInfo.GENERIC), singleTypeInfo);
             }
         } catch (Exception e) {
-            ;
+            loggerMaker.errorAndAddToDb(e.toString());
         }
 
         return singleTypeInfoMap;
@@ -101,8 +100,9 @@ public class SampleMessageStore {
         for (String message: samples) {
             try {
                 messages.add(RawApi.buildFromMessage(message));
-            } catch(Exception ignored) { }
-
+            } catch(Exception ignored) {
+                loggerMaker.errorAndAddToDb(ignored.toString());
+            }
         }
 
         return messages;

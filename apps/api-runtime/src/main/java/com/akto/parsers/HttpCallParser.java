@@ -7,6 +7,7 @@ import com.akto.DaoInit;
 import com.akto.dao.ApiCollectionsDao;
 import com.akto.dao.context.Context;
 import com.akto.dto.*;
+import com.akto.log.LoggerMaker;
 import com.akto.runtime.APICatalogSync;
 import com.akto.runtime.URLAggregator;
 
@@ -32,6 +33,7 @@ public class HttpCallParser {
     private int sync_count = 0;
     private int last_synced;
     private static final Logger logger = LoggerFactory.getLogger(HttpCallParser.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(HttpCallParser.class);
 
     public APICatalogSync apiCatalogSync;
     private Map<String, Integer> hostNameToIdMap = new HashMap<>();
@@ -139,7 +141,7 @@ public class HttpCallParser {
                 flag = true;
                 break;
             } catch (Exception e) {
-                logger.error("Error while inserting apiCollection, trying again " + i + " " + e.getMessage());
+                loggerMaker.errorAndAddToDb("Error while inserting apiCollection, trying again " + i + " " + e.toString());
             }
         }
         if (flag) { // flag tells if we were successfully able to insert collection
@@ -218,7 +220,7 @@ public class HttpCallParser {
 
                         hostNameToIdMap.put(key, apiCollectionId);
                     } catch (Exception e) {
-                        logger.error("Failed to create collection for host : " + hostName);
+                        loggerMaker.errorAndAddToDb("Failed to create collection for host : " + hostName);
                         createCollectionSimple(vxlanId);
                         hostNameToIdMap.put("null " + vxlanId, vxlanId);
                         apiCollectionId = httpResponseParam.requestParams.getApiCollectionId();
@@ -270,7 +272,7 @@ public class HttpCallParser {
                 aggregator.addURL(responseParams);
                 count++;
             } catch (Exception  e) {
-                
+                loggerMaker.errorAndAddToDb(e.toString());
             }
         }
         

@@ -1,18 +1,17 @@
 package com.akto.utils.cloud;
 
+import com.akto.log.LoggerMaker;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
 import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStacksResult;
 import com.amazonaws.services.cloudformation.model.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class Utils {
 
-    private static final Logger logger = LoggerFactory.getLogger(Utils.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(Utils.class);
     public static CloudType getCloudType() {
         if (System.getenv("AWS_REGION") != null) {
             return CloudType.AWS;

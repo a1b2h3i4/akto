@@ -1,6 +1,7 @@
 package com.akto.runtime;
 
 import com.akto.dto.HttpRequestParams;
+import com.akto.log.LoggerMaker;
 import org.junit.Test;
 
 import java.util.*;
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class FlowTest {
+    private static final LoggerMaker loggerMaker = new LoggerMaker(FlowTest.class);
 
     @Test
     public void testGetUserIdentifier() {
@@ -23,7 +25,7 @@ public class FlowTest {
         try {
             u = Flow.getUserIdentifier(name, requestParams);
         } catch (Exception e) {
-            ;
+            loggerMaker.errorAndAddToDb(e.toString());
         }
 
         assertEquals(value, u);
@@ -42,6 +44,7 @@ public class FlowTest {
         try {
             u = Flow.getUserIdentifier("wefwe", requestParams);
         } catch (Exception e) {
+            loggerMaker.errorAndAddToDb(e.toString());
         }
 
         assertNull(u);
@@ -59,6 +62,7 @@ public class FlowTest {
         try {
             u = Flow.getUserIdentifier("wefwe", requestParams);
         } catch (Exception e) {
+            loggerMaker.errorAndAddToDb(e.toString());
         }
 
         assertNull(u);

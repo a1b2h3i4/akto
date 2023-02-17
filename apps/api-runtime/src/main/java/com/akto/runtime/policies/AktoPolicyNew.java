@@ -8,6 +8,7 @@ import com.akto.dto.type.APICatalog;
 import com.akto.dto.type.SingleTypeInfo;
 import com.akto.dto.type.URLStatic;
 import com.akto.dto.type.URLTemplate;
+import com.akto.log.LoggerMaker;
 import com.akto.runtime.APICatalogSync;
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.model.*;
@@ -29,6 +30,7 @@ public class AktoPolicyNew {
     boolean redact = false;
 
     private static final Logger logger = LoggerFactory.getLogger(AktoPolicyNew.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(AktoPolicyNew.class);
 
     public void fetchFilters() {
         this.filters = RuntimeFilterDao.instance.findAll(new BasicDBObject());
@@ -77,14 +79,14 @@ public class AktoPolicyNew {
                 Map<Integer, FilterSampleData> filterSampleDataMap = filterSampleDataMapToApiInfo.get(apiInfo.getId());
                 fillApiInfoInCatalog(apiInfo, filterSampleDataMap);
             } catch (Exception e) {
-                logger.error(e.getMessage() + " " + e.getCause());
+                loggerMaker.errorAndAddToDb(e.toString() + " " + e.getCause());
             }
         }
 
     }
 
     public void syncWithDb(boolean initialising, boolean fetchAllSTI) {
-        // logger.info("Syncing with db");
+        logger.info("Syncing with db");
         if (!initialising) {
             AktoPolicy.UpdateReturn updateReturn = AktoPolicy.getUpdates(apiInfoCatalogMap);
             List<WriteModel<ApiInfo>> writesForApiInfo = updateReturn.updatesForApiInfo;
@@ -94,7 +96,7 @@ public class AktoPolicyNew {
                 if (writesForApiInfo.size() > 0) ApiInfoDao.instance.getMCollection().bulkWrite(writesForApiInfo);
                 if (!redact && writesForSampleData.size() > 0) FilterSampleDataDao.instance.getMCollection().bulkWrite(writesForSampleData);
             } catch (Exception e) {
-                logger.error(e.toString());
+                loggerMaker.errorAndAddToDb(e.toString());
             }
         }
 
@@ -129,7 +131,7 @@ public class AktoPolicyNew {
             try {
                 process(httpResponseParams);
             } catch (Exception e) {
-                logger.error(e.toString());
+                loggerMaker.errorAndAddToDb(e.toString());
                 ;
             }
         }

@@ -4,6 +4,7 @@ import com.akto.dao.ApiCollectionsDao;
 import com.akto.dao.SingleTypeInfoDao;
 import com.akto.dto.ApiCollection;
 import com.akto.dto.type.SingleTypeInfo;
+import com.akto.log.LoggerMaker;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
@@ -21,13 +22,11 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 public class Main {
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(Main.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
 
@@ -62,7 +61,7 @@ public class Main {
                 try {
                     addPathItems(responseCode, paths, url, method, singleTypeInfoList, includeHeaders);
                 } catch (Exception e) {
-                    logger.error("ERROR in buildPathsFromSingleTypeInfosPerUrl  " + e);
+                    loggerMaker.errorAndAddToDb("ERROR in buildPathsFromSingleTypeInfosPerUrl  " + e);
                 }
             }
         }
@@ -73,7 +72,7 @@ public class Main {
         try {
             schema = buildSchema(singleTypeInfoList);
         } catch (Exception e) {
-            logger.error("ERROR in building schema in addPathItems " + e);
+            loggerMaker.errorAndAddToDb("ERROR in building schema in addPathItems " + e.toString());
         }
         if (schema == null) {
             schema = new ObjectSchema();
@@ -83,7 +82,7 @@ public class Main {
         try{
             headerParameters = buildHeaders(singleTypeInfoList);
         } catch (Exception e) {
-            logger.error("ERROR in building headers in addPathItems " + e);
+            loggerMaker.errorAndAddToDb("ERROR in building headers in addPathItems " + e.toString());
         }
         
         PathBuilder.addPathItem(paths, url, method, responseCode, schema, headerParameters, includeHeaders);

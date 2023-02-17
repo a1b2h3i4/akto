@@ -5,11 +5,10 @@ import com.akto.dto.CustomAuthType;
 import com.akto.dto.HttpResponseParams;
 import com.akto.dto.runtime_filters.RuntimeFilter;
 import com.akto.dto.type.KeyTypes;
+import com.akto.log.LoggerMaker;
 import com.akto.util.JSONUtils;
 
 import com.mongodb.BasicDBObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -17,7 +16,7 @@ public class AuthPolicy {
 
     public static final String AUTHORIZATION_HEADER_NAME = "authorization";
     public static final String COOKIE_NAME = "cookie";
-    private static final Logger logger = LoggerFactory.getLogger(AuthPolicy.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(AuthPolicy.class);
 
     private static List<ApiInfo.AuthType> findBearerBasicAuth(String header, String value){
         value = value.trim();
@@ -69,6 +68,7 @@ public class AuthPolicy {
             BasicDBObject basicDBObject =  BasicDBObject.parse(httpResponseParams.getRequestParams().getPayload());
             flattenedPayload = JSONUtils.flattenWithDots(basicDBObject);
         } catch (Exception e){
+            loggerMaker.errorAndAddToDb(e.toString());
         }
         for (CustomAuthType customAuthType : customAuthTypes) {
 

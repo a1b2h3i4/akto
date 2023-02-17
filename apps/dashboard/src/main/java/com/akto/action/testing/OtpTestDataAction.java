@@ -4,11 +4,10 @@ import com.akto.action.UserAction;
 import com.akto.dao.OtpTestDataDao;
 import com.akto.dao.context.Context;
 import com.akto.dto.testing.OtpTestData;
+import com.akto.log.LoggerMaker;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.bson.conversions.Bson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,7 +22,7 @@ public class OtpTestDataAction extends UserAction {
 
     private String otp;
 
-    private static final Logger logger = LoggerFactory.getLogger(OtpTestDataAction.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(OtpTestDataAction.class);
 
     public String saveOtpData() {
 
@@ -64,6 +63,7 @@ public class OtpTestDataAction extends UserAction {
             }
         } catch(Exception e) {
             addActionError("Error fetching otp data for uuid " + uuid + " error " + e.getMessage());
+            loggerMaker.errorAndAddToDb(e.toString());
             return ERROR.toUpperCase();
         }
 

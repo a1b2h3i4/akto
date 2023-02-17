@@ -3,6 +3,7 @@ package com.akto.runtime;
 import com.akto.dao.RelationshipDao;
 import com.akto.dao.context.Context;
 import com.akto.dto.Relationship;
+import com.akto.log.LoggerMaker;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,6 +29,7 @@ public class RelationshipSync {
     ObjectMapper mapper = new ObjectMapper();
     JsonFactory factory = mapper.getFactory();
     private static final Logger logger = LoggerFactory.getLogger(RelationshipSync.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(RelationshipSync.class);
 
     public RelationshipSync(int user_thresh, int counter_thresh, int last_sync_thresh) {
         this.user_thresh = user_thresh;
@@ -112,7 +114,7 @@ public class RelationshipSync {
             try {
                 RelationshipDao.instance.getMCollection().bulkWrite(bulkUpdates);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                loggerMaker.errorAndAddToDb(e.toString());
             }
         }
 
@@ -136,7 +138,7 @@ public class RelationshipSync {
             try {
                 buildParameterMap(httpResponseParam, userIdentifierName);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                loggerMaker.errorAndAddToDb(e.toString());
                 continue;
             }
             counter += 1;

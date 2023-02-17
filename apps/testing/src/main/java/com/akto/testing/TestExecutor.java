@@ -28,8 +28,6 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.bson.types.ObjectId;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,7 +35,6 @@ import java.util.concurrent.*;
 public class TestExecutor {
 
     private static final LoggerMaker loggerMaker = new LoggerMaker(TestExecutor.class);
-    private static final Logger logger = LoggerFactory.getLogger(TestExecutor.class);
 
 
 
@@ -81,7 +78,7 @@ public class TestExecutor {
         try {
             apiWorkflowExecutor.init(workflowTest, testingRun.getId(), summaryId);
         } catch (Exception e) {
-            ;
+            loggerMaker.errorAndAddToDb(e.toString());
         }
 
         Map<String, Integer> totalCountIssues = new HashMap<>();
@@ -115,7 +112,7 @@ public class TestExecutor {
         try {
             LoginFlowResponse loginFlowResponse = triggerLoginFlow(authMechanism, 3);
             if (!loginFlowResponse.getSuccess()) {
-                logger.error("login flow failed");
+                loggerMaker.errorAndAddToDb("login flow failed");
                 throw new Exception("login flow failed");
             }
         } catch (Exception e) {
@@ -166,7 +163,7 @@ public class TestExecutor {
                     testingRunResults.addAll(future.get());
                 }
             } catch (InterruptedException | ExecutionException e) {
-                ;
+                loggerMaker.errorAndAddToDb(e.toString());
             }
         }
 
@@ -214,12 +211,11 @@ public class TestExecutor {
             try {
                 loginFlowResponse = executeLoginFlow(authMechanism, null);
                 if (loginFlowResponse.getSuccess()) {
-                    logger.info("login flow success");
+                    loggerMaker.infoAndAddToDb("login flow success");
                     break;
                 }
             } catch (Exception e) {
-                logger.error("retrying login flow" + e.getMessage());
-                loggerMaker.errorAndAddToDb(e.getMessage());
+                loggerMaker.errorAndAddToDb("retrying login flow" + e.toString());
             }
         }
         return loginFlowResponse;
@@ -228,16 +224,16 @@ public class TestExecutor {
     public LoginFlowResponse executeLoginFlow(AuthMechanism authMechanism, LoginFlowParams loginFlowParams) throws Exception {
 
         if (authMechanism.getType() == null) {
-            logger.info("auth type value is null");
+            loggerMaker.infoAndAddToDb("auth type value is null");
             return new LoginFlowResponse(null, null, true);
         }
 
         if (!authMechanism.getType().equals(LoginFlowEnums.AuthMechanismTypes.LOGIN_REQUEST.toString())) {
-            logger.info("invalid auth type for login flow execution");
+            loggerMaker.infoAndAddToDb("invalid auth type for login flow execution");
             return new LoginFlowResponse(null, null, true);
         }
 
-        logger.info("login flow execution started");
+        loggerMaker.infoAndAddToDb("login flow execution started");
 
         WorkflowTest workflowObj = convertToWorkflowGraph(authMechanism.getRequestData(), loginFlowParams);
         ApiWorkflowExecutor apiWorkflowExecutor = new ApiWorkflowExecutor();
@@ -357,7 +353,7 @@ public class TestExecutor {
                 testingRunResults = start(apiInfoKey, testIdConfig, testRunId, testingRunConfig, testingUtil, testRunResultSummaryId);
                 TestingRunResultDao.instance.insertMany(testingRunResults);
             } catch (Exception e) {
-                e.printStackTrace();
+                loggerMaker.errorAndAddToDb(e.toString());
             }
         }
 

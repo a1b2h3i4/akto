@@ -1,13 +1,12 @@
 package com.akto.har;
 
+import com.akto.log.LoggerMaker;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.sstoehr.harreader.HarReader;
 import de.sstoehr.harreader.HarReaderException;
 import de.sstoehr.harreader.HarReaderMode;
 import de.sstoehr.harreader.model.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URLDecoder;
@@ -16,7 +15,7 @@ import java.util.*;
 public class HAR {
     private final static ObjectMapper mapper = new ObjectMapper();
     private final List<String> errors = new ArrayList<>();
-    private static final Logger logger = LoggerFactory.getLogger(Har.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(Har.class);
     public static final String JSON_CONTENT_TYPE = "application/json";
     public static final String FORM_URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded";
     public List<String> getMessages(String harString, int collection_id) throws HarReaderException {
@@ -38,7 +37,7 @@ public class HAR {
                 }
                 
             } catch (Exception e) {
-                logger.error("Error while parsing har file on entry: " + idx + " ERROR: " + e);
+                loggerMaker.errorAndAddToDb("Error while parsing har file on entry: " + idx + " ERROR: " + e.toString());
                 errors.add("Error in entry " + idx);
             }
         }

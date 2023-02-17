@@ -5,13 +5,12 @@ import com.akto.dao.SampleDataDao;
 import com.akto.dto.ApiCollection;
 import com.akto.dto.traffic.SampleData;
 import com.akto.dto.type.SingleTypeInfo;
+import com.akto.log.LoggerMaker;
 import com.akto.open_api.Main;
 import com.akto.utils.SampleDataToSTI;
 import com.mongodb.client.model.Filters;
 import io.swagger.v3.oas.models.OpenAPI;
 import org.apache.struts2.interceptor.ServletResponseAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -21,7 +20,7 @@ import java.util.Map;
 
 public class OpenApiAction extends UserAction implements ServletResponseAware {
 
-    private static final Logger logger = LoggerFactory.getLogger(OpenApiAction.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(OpenApiAction.class);
     private int apiCollectionId;
     private String openAPIString = null;
     private boolean includeHeaders = true;
@@ -43,7 +42,7 @@ public class OpenApiAction extends UserAction implements ServletResponseAware {
             OpenAPI openAPI = Main.init(apiCollection.getDisplayName(),stiList, includeHeaders, host);
             openAPIString = Main.convertOpenApiToJSON(openAPI);
         } catch (Exception e) {
-            logger.error("ERROR while downloading openApi file " + e);
+            loggerMaker.errorAndAddToDb("ERROR while downloading openApi file " + e.toString());
             return ERROR.toUpperCase();
         }
 

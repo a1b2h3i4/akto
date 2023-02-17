@@ -3,9 +3,8 @@ package com.akto.utils.cloud.serverless.aws;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import com.akto.log.LoggerMaker;
 import com.akto.utils.cloud.serverless.ServerlessFunction;
 import com.akto.utils.cloud.serverless.UpdateFunctionRequest;
 import com.amazonaws.services.lambda.AWSLambda;
@@ -35,7 +34,7 @@ public class Lambda implements ServerlessFunction {
 
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ServerlessFunction.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(ServerlessFunction.class);
 
     private static final AWSLambda awsLambda = AWSLambdaClientBuilder.standard().build();
 
@@ -66,7 +65,7 @@ public class Lambda implements ServerlessFunction {
 
             if (keysUpdatedCount == 0) {
                 // no env vars to update, returning
-                logger.info("No env vars to update for funciton: " + functionName + ", returning");
+                loggerMaker.infoAndAddToDb("No env vars to update for funciton: " + functionName + ", returning");
                 return;
             }
 
@@ -77,9 +76,9 @@ public class Lambda implements ServerlessFunction {
             req.setEnvironment(updatedEnvironment);
 
             awsLambda.updateFunctionConfiguration(req);
-            logger.info("Succeefully updated function configuration for function: " + functionName);
+            loggerMaker.infoAndAddToDb("Succeefully updated function configuration for function: " + functionName);
         } catch (Exception e) {
-            ;
+            loggerMaker.errorAndAddToDb(e.toString());
         }
     }
 
@@ -99,13 +98,13 @@ public class Lambda implements ServerlessFunction {
         InvokeResult invokeResult = null;
         try {
 
-            logger.info("Invoke lambda "+functionName);
+            loggerMaker.infoAndAddToDb("Invoke lambda "+functionName);
             invokeResult = awsLambda.invoke(invokeRequest);
 
             String resp = new String(invokeResult.getPayload().array(), StandardCharsets.UTF_8);
-            logger.info("Function: {}, response: {}", functionName, resp);
+            loggerMaker.infoAndAddToDb(String.format("Function: %s, response: %s", functionName, resp));
         } catch (AWSLambdaException e) {
-            logger.error(String.format("Error while invoking Lambda: %s", functionName), e);
+            loggerMaker.errorAndAddToDb(String.format("Error while invoking Lambda, %s : %s", functionName, e.toString()));
         }
 
 

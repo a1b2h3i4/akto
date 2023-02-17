@@ -21,6 +21,7 @@ import com.akto.dto.type.URLTemplate;
 import com.akto.dto.type.SingleTypeInfo.SubType;
 import com.akto.dto.type.SingleTypeInfo.SuperType;
 import com.akto.dto.type.URLMethods.Method;
+import com.akto.log.LoggerMaker;
 import com.akto.parsers.HttpCallParser;
 import com.akto.runtime.merge.MergeOnHostOnly;
 import com.akto.task.Cluster;
@@ -43,6 +44,7 @@ public class APICatalogSync {
     public int thresh;
     public String userIdentifier;
     private static final Logger logger = LoggerFactory.getLogger(APICatalogSync.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(APICatalogSync.class);
     public Map<Integer, APICatalog> dbState;
     public Map<Integer, APICatalog> delta;
     public Map<SensitiveParamInfo, Boolean> sensitiveParamInfoBooleanMap;
@@ -60,7 +62,7 @@ public class APICatalogSync {
                 mergeAsyncOutside = AccountSettingsDao.instance.findOne(AccountSettingsDao.generateFilter()).getMergeAsyncOutside();
             }
         } catch (Exception e) {
-            
+            loggerMaker.errorAndAddToDb(e.toString());
         }
         
     }
@@ -73,8 +75,7 @@ public class APICatalogSync {
             try {
                 processResponse(requestTemplate, iter.next(), deletedInfo);
             } catch (Exception e) {
-                e.printStackTrace();
-                logger.error("processResponse: " + e.getMessage());
+                loggerMaker.errorAndAddToDb("processResponse: " + e.toString() + "StackTrace: " + e.getStackTrace().toString());
             }
         }
     }
@@ -141,7 +142,7 @@ public class APICatalogSync {
             }
 
         } catch (JsonParseException e) {
-            logger.error("Failed to parse json payload " + e.getMessage());
+            loggerMaker.errorAndAddToDb("Failed to parse json payload " + e.toString());
         }
     }
 
@@ -749,7 +750,7 @@ public class APICatalogSync {
                 }
             }
         } catch (Exception e) {
-
+            loggerMaker.errorAndAddToDb(e.toString());
         }
     }
 
@@ -772,7 +773,7 @@ public class APICatalogSync {
                 iterator.remove();
             }
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            loggerMaker.errorAndAddToDb(e.toString());
         }
 
         return ret;
@@ -803,7 +804,7 @@ public class APICatalogSync {
 
             }
         } catch (Exception e) {
-            logger.info(e.getMessage(), e);
+            loggerMaker.errorAndAddToDb(e.toString());
         }
     }
 
@@ -891,6 +892,7 @@ public class APICatalogSync {
                         if (source.equals(Source.HAR) || source.equals(Source.PCAP)) finalRedact = false;
                     } catch (Exception e1) {
                         e1.printStackTrace();
+                        loggerMaker.errorAndAddToDb(e1.toString());
                         continue;
                     }
                 }
@@ -903,7 +905,7 @@ public class APICatalogSync {
                         finalSamples.add(s);
                     }
                 } catch (Exception e) {
-                    ;
+                    loggerMaker.errorAndAddToDb(e.toString());
                 }
             }
             Bson bson = Updates.pushEach("samples", finalSamples, new PushOptions().slice(-10));
@@ -1130,7 +1132,7 @@ public class APICatalogSync {
                             mergeUrlsAndSave(apiCollection.getId());
                         }
                     } catch (Exception e) {
-                        ;
+                        loggerMaker.errorAndAddToDb(e.toString());
                     }
                 }
             }
@@ -1248,7 +1250,7 @@ public class APICatalogSync {
                     }
                     keyTypes.getOccurrences().put(param.getSubType(), param);
                 } catch (Exception e) {
-                    logger.error("ERROR while parsing url param position: " + p);
+                    loggerMaker.errorAndAddToDb("ERROR while parsing url param position: " + p);
                 }
                 continue;
             }
@@ -1270,7 +1272,7 @@ public class APICatalogSync {
                 keyTypes = new KeyTypes(new HashMap<>(), false);
 
                 if (param.getParam() == null) {
-                    logger.info("null value - " + param.composeKey());
+                    loggerMaker.errorAndAddToDb("null value - " + param.composeKey());
                 }
 
                 keyTypesMap.put(param.getParam(), keyTypes);

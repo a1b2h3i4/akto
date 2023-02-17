@@ -5,6 +5,7 @@ import com.akto.dto.ApiInfo.ApiInfoKey;
 import com.akto.dto.testing.*;
 import com.akto.dto.testing.info.TestInfo;
 import com.akto.dto.type.*;
+import com.akto.log.LoggerMaker;
 import com.akto.runtime.APICatalogSync;
 import com.akto.runtime.RelationshipSync;
 import com.akto.store.TestingUtil;
@@ -21,8 +22,6 @@ import com.google.gson.Gson;
 import com.mongodb.BasicDBObject;
 
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -35,7 +34,7 @@ public abstract class TestPlugin {
     static ObjectMapper mapper = new ObjectMapper();
     static JsonFactory factory = mapper.getFactory();
 
-    private static final Logger logger = LoggerFactory.getLogger(TestPlugin.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(TestPlugin.class);
     private static final Gson gson = new Gson();
 
     public abstract Result  start(ApiInfo.ApiInfoKey apiInfoKey, TestingUtil testingUtil);
@@ -167,7 +166,7 @@ public abstract class TestPlugin {
         try {
             message = RedactSampleData.convertOriginalReqRespToString(request, response);
         } catch (Exception e) {
-            logger.error("Error while converting OriginalHttpRequest to string", e);
+            loggerMaker.errorAndAddToDb(String.format("Error while converting OriginalHttpRequest to string: %s", e.toString()));
             message = RedactSampleData.convertOriginalReqRespToString(new OriginalHttpRequest(), new OriginalHttpResponse());
             errors.add(TestResult.TestError.FAILED_TO_CONVERT_TEST_REQUEST_TO_STRING);
         }
@@ -350,7 +349,7 @@ public abstract class TestPlugin {
                 String responseHeaders = headers.toString();
                 json.put("responseHeaders", responseHeaders);
             } catch (Exception e) {
-                logger.error("response exracting response header from percent match req");
+                loggerMaker.errorAndAddToDb("response exracting response header from percent match req");
             }
             originalMessage = gson.toJson(json);
             rawApi.setOriginalMessage(originalMessage);
@@ -414,7 +413,7 @@ public abstract class TestPlugin {
             try {
                 replayedResponse = ApiExecutor.sendRequest(testRequest, followRedirects);
             } catch (Exception e) {
-                logger.error("request replay failed with error " + e.getMessage());
+                loggerMaker.errorAndAddToDb("request replay failed with error " + e.toString());
                 continue;
             }
             int replayedStatusCode = StatusCodeAnalyser.getStatusCode(replayedResponse.getBody(), replayedResponse.getStatusCode());

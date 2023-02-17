@@ -10,6 +10,7 @@ import com.akto.dto.type.RequestTemplate;
 import com.akto.dto.type.SingleTypeInfo;
 import com.akto.dto.type.URLStatic;
 import com.akto.dto.type.URLTemplate;
+import com.akto.log.LoggerMaker;
 import com.akto.runtime.APICatalogSync;
 import com.mongodb.BasicDBObject;
 import com.mongodb.ConnectionString;
@@ -39,6 +40,7 @@ public class AktoPolicy {
     private int currentBatchSize = 0;
 
     private static final Logger logger = LoggerFactory.getLogger(AktoPolicy.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(AktoPolicy.class);
 
     public void fetchFilters() {
         this.filters = RuntimeFilterDao.instance.findAll(new BasicDBObject());
@@ -55,7 +57,7 @@ public class AktoPolicy {
         if (accountSettings != null) {
             List<String> cidrList = accountSettings.getPrivateCidrList();
             if ( cidrList != null && !cidrList.isEmpty()) {
-                // logger.info("Found cidr from db");
+                logger.info("Found cidr from db");
                 apiAccessTypePolicy.setPrivateCidrList(cidrList);
             }
 
@@ -105,7 +107,7 @@ public class AktoPolicy {
             try {
                 fillApiInfoInCatalog(apiInfo, true);
             } catch (Exception e) {
-                logger.error(e.getMessage() + " " + e.getCause());
+                loggerMaker.errorAndAddToDb(e.toString() + " " + e.getCause());
             }
         }
 
@@ -113,7 +115,7 @@ public class AktoPolicy {
             try {
                 fillApiInfoInCatalog(apiInfo, false);
             } catch (Exception e) {
-                logger.error(e.getMessage() + " " + e.getCause());
+                loggerMaker.errorAndAddToDb(e.toString() + " " + e.getCause());
             }
         }
 
@@ -122,7 +124,7 @@ public class AktoPolicy {
             try{
                 fillFilterSampleDataInCatalog(filterSampleData);
             } catch (Exception e) {
-                logger.error(e.getMessage() + " " + e.getCause());
+                loggerMaker.errorAndAddToDb(e.toString() + " " + e.getCause());
             }
         }
 
@@ -130,7 +132,7 @@ public class AktoPolicy {
             try {
                 fillFilterSampleDataInCatalog(filterSampleData);
             } catch (Exception e) {
-                logger.error(e.getMessage() + " " + e.getCause());
+                loggerMaker.errorAndAddToDb(e.toString() + " " + e.getCause());
             }
         }
 
@@ -139,7 +141,7 @@ public class AktoPolicy {
     }
 
     public void syncWithDb(boolean initialising, Map<Integer, APICatalog> delta, boolean fetchAllSTI) {
-        // logger.info("Syncing with db");
+        logger.info("Syncing with db");
         if (!initialising) {
             UpdateReturn updateReturn = AktoPolicy.getUpdates(apiInfoCatalogMap);
             List<WriteModel<ApiInfo>> writesForApiInfo = updateReturn.updatesForApiInfo;
@@ -149,7 +151,7 @@ public class AktoPolicy {
                 if (writesForApiInfo.size() > 0) ApiInfoDao.instance.getMCollection().bulkWrite(writesForApiInfo);
                 if (!redact && writesForSampleData.size() > 0) FilterSampleDataDao.instance.getMCollection().bulkWrite(writesForSampleData);
             } catch (Exception e) {
-                logger.error(e.toString());
+                loggerMaker.errorAndAddToDb(e.toString());
             }
         }
 
@@ -290,7 +292,7 @@ public class AktoPolicy {
             try {
                 process(httpResponseParams);
             } catch (Exception e) {
-                logger.error(e.toString());
+                loggerMaker.errorAndAddToDb(e.toString());
                 ;
             }
             currentBatchSize += 1;
@@ -316,7 +318,7 @@ public class AktoPolicy {
     }
 
     public void process(HttpResponseParams httpResponseParams) throws Exception {
-        // logger.info("processing....");
+        logger.info("processing....");
         List<CustomAuthType> customAuthTypes = SingleTypeInfo.activeCustomAuthTypes;
         ApiInfo.ApiInfoKey apiInfoKey = ApiInfo.ApiInfoKey.generateFromHttpResponseParams(httpResponseParams);
         PolicyCatalog policyCatalog = getApiInfoFromMap(apiInfoKey);

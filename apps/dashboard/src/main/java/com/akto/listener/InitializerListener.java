@@ -24,6 +24,7 @@ import com.akto.dto.pii.PIISource;
 import com.akto.dto.pii.PIIType;
 import com.akto.dto.testing.sources.TestSourceConfig;
 import com.akto.dto.type.SingleTypeInfo;
+import com.akto.log.LoggerMaker;
 import com.akto.notifications.slack.DailyUpdate;
 import com.akto.notifications.slack.TestSummaryGenerator;
 import com.akto.testing.ApiExecutor;
@@ -45,8 +46,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.conversions.Bson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContextListener;
 import java.io.File;
@@ -65,7 +64,7 @@ import static com.akto.util.Constants.ID;
 import static com.mongodb.client.model.Filters.eq;
 
 public class InitializerListener implements ServletContextListener {
-    private static final Logger logger = LoggerFactory.getLogger(InitializerListener.class);
+    private static final LoggerMaker loggerMaker = new LoggerMaker(InitializerListener.class);
     ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private static String domain = null;
@@ -91,13 +90,13 @@ public class InitializerListener implements ServletContextListener {
                 try {
                     executeTestSourcesFetch();
                 } catch (Exception e) {
-
+                    loggerMaker.errorAndAddToDb(e.toString());
                 }
 
                 try {
                     executePIISourceFetch();
                 } catch (Exception e) {
-
+                    loggerMaker.errorAndAddToDb(e.toString());
                 }
             }
         }, 0, 4, TimeUnit.HOURS);
@@ -166,6 +165,7 @@ public class InitializerListener implements ServletContextListener {
 
 
         } catch (IOException e1) {
+            loggerMaker.errorAndAddToDb(e1.toString());
         }
 
 
@@ -225,7 +225,7 @@ public class InitializerListener implements ServletContextListener {
                 }
 
             } catch (IOException e) {
-                logger.error("failed to read file", e);
+                loggerMaker.errorAndAddToDb(String.format("failed to read file %s", e.toString()));
                 continue;
             }
         }
@@ -279,7 +279,7 @@ public class InitializerListener implements ServletContextListener {
                             continue;
                         }
 
-                        logger.info(slackWebhook.toString());
+                        loggerMaker.infoAndAddToDb(slackWebhook.toString());
 
                         ChangesInfo ci = getChangesInfo(now - slackWebhook.getLastSentTimestamp(), now - slackWebhook.getLastSentTimestamp());
                         if (ci == null || (ci.newEndpointsLast7Days.size() + ci.newSensitiveParams.size() + ci.recentSentiiveParams + ci.newParamsInExistingEndpoints) == 0) {
@@ -296,24 +296,25 @@ public class InitializerListener implements ServletContextListener {
                         slackWebhook.setLastSentTimestamp(now);
                         SlackWebhooksDao.instance.updateOne(eq("webhook", slackWebhook.getWebhook()), Updates.set("lastSentTimestamp", now));
 
-                        logger.info("******************DAILY INVENTORY SLACK******************");
+                        loggerMaker.infoAndAddToDb("******************DAILY INVENTORY SLACK******************");
                         String webhookUrl = slackWebhook.getWebhook();
                         String payload = dailyUpdate.toJSON();
-                        logger.info(payload);
+                        loggerMaker.infoAndAddToDb(payload);
                         WebhookResponse response = slack.send(webhookUrl, payload);
-                        logger.info("*********************************************************");
+                        loggerMaker.infoAndAddToDb("*********************************************************");
 
                         // slack testing notification
-                        logger.info("******************TESTING SUMMARY SLACK******************");
+                        loggerMaker.infoAndAddToDb("******************TESTING SUMMARY SLACK******************");
                         TestSummaryGenerator testSummaryGenerator = new TestSummaryGenerator(1_000_000);
                         payload = testSummaryGenerator.toJson(slackWebhook.getDashboardUrl());
-                        logger.info(payload);
+                        loggerMaker.infoAndAddToDb(payload);
                         response = slack.send(webhookUrl, payload);
-                        logger.info("*********************************************************");
+                        loggerMaker.infoAndAddToDb("*********************************************************");
 
                     }
 
                 } catch (Exception ex) {
+                    loggerMaker.errorAndAddToDb(ex.toString());
                 }
             }
         }, 0, 5, TimeUnit.MINUTES);
@@ -365,7 +366,7 @@ public class InitializerListener implements ServletContextListener {
 
         try {
             response = ApiExecutor.sendRequest(request,true);
-            logger.info("webhook request sent");
+            loggerMaker.infoAndAddToDb("webhook request sent");
         } catch(Exception e){
             errors.add("API execution failed");
         }
@@ -544,7 +545,7 @@ public class InitializerListener implements ServletContextListener {
 
             return ret;
         } catch (Exception e) {
-            logger.error("get new endpoints", e);
+            loggerMaker.errorAndAddToDb(String.format("get new endpoints %s", e.toString()));
         }
 
         return null;
@@ -651,11 +652,11 @@ public class InitializerListener implements ServletContextListener {
     public void contextInitialized(javax.servlet.ServletContextEvent sce) {
         sce.getServletContext().getSessionCookieConfig().setSecure(HttpUtils.isHttpsEnabled());
 
-        logger.info("context initialized");
+        loggerMaker.infoAndAddToDb("context initialized");
 
         // String mongoURI = "mongodb://write_ops:write_ops@cluster0-shard-00-00.yg43a.mongodb.net:27017,cluster0-shard-00-01.yg43a.mongodb.net:27017,cluster0-shard-00-02.yg43a.mongodb.net:27017/myFirstDatabase?ssl=true&replicaSet=atlas-qd3mle-shard-0&authSource=admin&retryWrites=true&w=majority";
         String mongoURI = System.getenv("AKTO_MONGO_CONN");
-        logger.info("MONGO URI " + mongoURI);
+        loggerMaker.infoAndAddToDb("MONGO URI " + mongoURI);
 
 
         DaoInit.init(new ConnectionString(mongoURI));
@@ -701,19 +702,19 @@ public class InitializerListener implements ServletContextListener {
             AccountSettings accountSettings = AccountSettingsDao.instance.findOne(AccountSettingsDao.generateFilter());
             dropSampleDataIfEarlierNotDroped(accountSettings);
         } catch (Exception e) {
-            logger.error("error while setting up dashboard: " + e.getMessage());
+            loggerMaker.errorAndAddToDb("error while setting up dashboard: " + e.toString());
         }
 
         try {
             AccountSettingsDao.instance.updateVersion(AccountSettings.DASHBOARD_VERSION);
         } catch (Exception e) {
-            logger.error("error while updating dashboard version: " + e.getMessage());
+            loggerMaker.errorAndAddToDb("error while updating dashboard version: " + e.toString());
         }
 
         try {
             readAndSaveBurpPluginVersion();
         } catch (Exception e) {
-            e.printStackTrace();
+            loggerMaker.errorAndAddToDb(e.toString());
         }
     }
 
@@ -736,7 +737,7 @@ public class InitializerListener implements ServletContextListener {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            loggerMaker.errorAndAddToDb(e.toString());
         }
 
     }
@@ -744,11 +745,11 @@ public class InitializerListener implements ServletContextListener {
     public void updateDeploymentStatus(BackwardCompatibility backwardCompatibility) {
         String ownerEmail = System.getenv("OWNER_EMAIL");
         if (ownerEmail == null) {
-            logger.info("Owner email missing, might be an existing customer, skipping sending an slack and mixpanel alert");
+            loggerMaker.infoAndAddToDb("Owner email missing, might be an existing customer, skipping sending an slack and mixpanel alert");
             return;
         }
         if (backwardCompatibility.isDeploymentStatusUpdated()) {
-            logger.info("Deployment status has already been updated, skipping this");
+            loggerMaker.infoAndAddToDb("Deployment status has already been updated, skipping this");
             return;
         }
         String body = "{\n    \"ownerEmail\": \"" + ownerEmail + "\",\n    \"stackStatus\": \"COMPLETED\",\n    \"cloudType\": \"AWS\"\n}";
@@ -756,9 +757,9 @@ public class InitializerListener implements ServletContextListener {
         OriginalHttpRequest request = new OriginalHttpRequest(getUpdateDeploymentStatusUrl(), "", "POST", body, OriginalHttpRequest.buildHeadersMap(headers), "");
         try {
             OriginalHttpResponse response = ApiExecutor.sendRequest(request, false);
-            logger.info("Update deployment status reponse: {}", response.getBody());
+            loggerMaker.infoAndAddToDb(String.format("Update deployment status reponse: %s", response.getBody()));
         } catch (Exception e) {
-            logger.error("Failed to update deployment status, will try again on next boot up", e);
+            loggerMaker.errorAndAddToDb(String.format("Failed to update deployment status, will try again on next boot up : %s", e.toString()));
             return;
         }
         BackwardCompatibilityDao.instance.updateOne(
